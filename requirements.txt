@@ -1,0 +1,34 @@
+# ScrutinyAI — Backend Dependencies
+# ────────────────────────────────────────────────────────────────────────────
+# Python 3.11+
+# Install: pip install -r requirements.txt
+# ────────────────────────────────────────────────────────────────────────────
+
+# Web framework & ASGI server
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+
+# OCR — primary (text-native PDFs)
+PyMuPDF==1.25.3
+
+# OCR — fallback (scanned PDFs)
+pytesseract==0.3.13
+Pillow==11.1.0
+
+# AI engine — Google Gemini 2.0 Flash
+google-generativeai==0.8.4
+
+# Supabase client (database + auth + storage)
+supabase==2.13.0
+
+# File upload support for FastAPI
+python-multipart==0.0.20
+
+# Environment variable loading
+python-dotenv==1.0.1
+
+# Data validation (used with FastAPI request/response models)
+pydantic==2.11.1
+
+# HTTP client (used by supabase and google-generativeai internally)
+httpx==0.28.1

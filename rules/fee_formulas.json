@@ -1,0 +1,92 @@
+[
+  {
+    "suit_type": "money_suit",
+    "description": "Money suits and damages",
+    "basis": "amount_claimed",
+    "formula": "ad_valorem",
+    "rate_percent": 1.5,
+    "minimum_fee_rs": 100,
+    "maximum_fee_rs": null,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Fee calculated on specific amount claimed"
+  },
+  {
+    "suit_type": "maintenance",
+    "description": "Maintenance suits",
+    "basis": "annual_amount",
+    "formula": "ad_valorem",
+    "rate_percent": 1.5,
+    "minimum_fee_rs": 100,
+    "maximum_fee_rs": null,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Valued at amount payable for one year"
+  },
+  {
+    "suit_type": "movable_property",
+    "description": "Suits relating to movable property",
+    "basis": "market_value",
+    "formula": "ad_valorem",
+    "rate_percent": 1.5,
+    "minimum_fee_rs": 100,
+    "maximum_fee_rs": null,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Market value of the property at date of filing"
+  },
+  {
+    "suit_type": "agricultural_land",
+    "description": "Suits relating to agricultural land",
+    "basis": "annual_land_revenue",
+    "formula": "multiplier",
+    "multiplier": 30,
+    "rate_percent": null,
+    "minimum_fee_rs": 100,
+    "maximum_fee_rs": null,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Valued at 30 times the annual land revenue. Market value used for jurisdiction determination."
+  },
+  {
+    "suit_type": "injunction",
+    "description": "Suits for injunction",
+    "basis": "market_value_or_relief_value",
+    "formula": "ad_valorem",
+    "rate_percent": 1.5,
+    "minimum_fee_rs": 200,
+    "maximum_fee_rs": null,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Valued at market value of property or amount at which relief is valued by plaintiff"
+  },
+  {
+    "suit_type": "specific_performance",
+    "description": "Suits for specific performance of contract",
+    "basis": "consideration_in_agreement",
+    "formula": "ad_valorem",
+    "rate_percent": 1.5,
+    "minimum_fee_rs": 200,
+    "maximum_fee_rs": null,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Valued at the consideration mentioned in the agreement"
+  },
+  {
+    "suit_type": "lac_matter",
+    "description": "Land Acquisition cases",
+    "basis": "compensation_amount",
+    "formula": "as_per_act",
+    "rate_percent": null,
+    "minimum_fee_rs": 100,
+    "maximum_fee_rs": null,
+    "rule_source": "Section 48 Karnataka Court Fees and Suits Valuation Act 1958 read with Section 23(1) Land Acquisition Act",
+    "notes": "Court fee as per Section 48 of Karnataka Court Fees Act. Valuation based on compensation claimed."
+  },
+  {
+    "suit_type": "writ_petition",
+    "description": "Writ petitions under Article 226",
+    "basis": "fixed",
+    "formula": "fixed",
+    "fixed_amount_rs": 200,
+    "rate_percent": null,
+    "minimum_fee_rs": 200,
+    "maximum_fee_rs": 200,
+    "rule_source": "Karnataka Court Fees and Suits Valuation Act 1958",
+    "notes": "Fixed court fee for writ petitions"
+  }
+]
