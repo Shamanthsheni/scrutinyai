@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import NavBar from '../../../../components/NavBar'
 import ReportViewer from '../../../../components/ReportViewer'
 import LoadingSkeleton from '../../../../components/LoadingSkeleton'
+import PrintChecklist from '../../../../components/PrintChecklist'
 import { supabase } from '../../../../lib/supabase'
 import { getReport } from '../../../../lib/api'
 import type { CheckResult } from '../../../../types'
@@ -21,6 +22,31 @@ function formatDate(dateStr: string): string {
   })
 }
 
+// Simple effect-driven count-up logic
+function AnimatedCount({ value }: { value: number }) {
+  const [count, setCount] = useState(0)
+  
+  useEffect(() => {
+    let current = 0
+    if (value === 0) return
+    const step = Math.max(1, Math.floor(value / 20)) // Adjust increment speed
+    const ms = 40 // Adjust interval frame rate
+
+    const timerId = setInterval(() => {
+      current += step
+      if (current >= value) {
+        current = value
+        clearInterval(timerId)
+      }
+      setCount(current)
+    }, ms)
+    
+    return () => clearInterval(timerId)
+  }, [value])
+  
+  return <>{count}</>
+}
+
 interface PageProps {
   params: { job_id: string }
 }
@@ -32,6 +58,7 @@ export default function ReportPage({ params }: PageProps) {
   const [report, setReport] = useState<CheckResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     // Auth guard
@@ -58,6 +85,25 @@ export default function ReportPage({ params }: PageProps) {
     }
   }
 
+  const handleCopyReport = async () => {
+    if (!report) return
+    const txt = [
+      `ScrutinyAI Report — ${report.filename}`,
+      `Checked: ${formatDate(report.checked_at)}`,
+      `Overall checks processed against Checklist v${report.checklist_version}`,
+      `Critical: ${report.critical_count} | Major: ${report.major_count} | Minor: ${report.minor_count}`,
+      '',
+      ...report.objections.map(o => `[${o.severity}] ${o.checklist_point_id}: ${o.description} | ${o.requires_manual_verification ? '(Manual Verify)' : ''}\n  Suggested Fix: ${o.suggested_fix}\n  Rule Citation: ${o.rule_citation}`)
+    ].join('\n')
+    try {
+      await navigator.clipboard.writeText(txt)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      alert("Failed to copy clipboard content.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -72,28 +118,28 @@ export default function ReportPage({ params }: PageProps) {
       <div className="min-h-screen bg-gray-50">
         <NavBar />
         <div className="max-w-3xl mx-auto px-4 py-12">
-          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center shadow-lg">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full
-                            bg-red-custom/10 mb-4">
+                            bg-red-custom/10 mb-4 ring-2 ring-red-custom/20">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="#a32d2d" strokeWidth="1.5" />
                 <path d="M12 8v4M12 16h.01" stroke="#a32d2d" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </div>
-            <h2 className="text-sm font-medium text-[#1a2744] mb-1">Something went wrong</h2>
+            <h2 className="text-sm font-semibold text-[#1a2744] mb-1">Something went wrong</h2>
             <p className="text-xs text-gray-text mb-6">{error}</p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={fetchReport}
-                className="text-sm bg-teal text-white font-medium rounded-lg px-4 py-2
-                           hover:bg-teal-dark transition-colors"
+                className="text-sm bg-teal text-white font-medium rounded-lg px-5 py-2.5
+                           hover:bg-teal-dark transition-all transform hover:-translate-y-0.5 shadow-sm"
               >
                 Retry
               </button>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="text-sm border border-gray-300 text-gray-600 font-medium
-                           rounded-lg px-4 py-2 hover:border-gray-400 transition-colors"
+                className="text-sm border border-gray-300 bg-white text-gray-700 font-medium
+                           rounded-lg px-5 py-2.5 hover:border-gray-400 focus:outline-none transition-all"
               >
                 Back to dashboard
               </button>
@@ -116,52 +162,80 @@ export default function ReportPage({ params }: PageProps) {
       <NavBar />
 
       {/* Report header — navy */}
-      <div className="bg-navy px-6 py-8">
-        <div className="max-w-3xl mx-auto">
-          {/* Back link */}
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-slate text-xs mb-4 flex items-center gap-1.5 hover:text-white transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Back to dashboard
-          </button>
+      <div className="bg-[#0b172a] px-6 py-8 relative shadow-inner overflow-hidden">
+        <div className="absolute inset-0 grid-pattern-overlay opacity-30 pointer-events-none" />
+        <div className="max-w-3xl mx-auto relative z-10">
+          
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-2">
+            <div>
+              {/* Back link */}
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="text-slate text-xs mb-5 flex items-center gap-1.5 hover:text-white transition-colors
+                           font-semibold tracking-wide"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Back to dashboard
+              </button>
 
-          {/* Filename */}
-          <h1 className="text-white text-lg font-medium mb-1 break-words">
-            {report.filename}
-          </h1>
+              {/* Filename */}
+              <h1 className="text-white text-xl md:text-2xl font-semibold mb-1 break-words">
+                {report.filename}
+              </h1>
 
-          {/* Meta */}
-          <p className="text-slate text-xs mb-5">
-            Checked on {formatDate(report.checked_at)} · Checklist v{report.checklist_version}
-          </p>
+              {/* Meta */}
+              <p className="text-slate text-xs opacity-90 mb-5">
+                Checked on {formatDate(report.checked_at)} · Checklist v{report.checklist_version}
+              </p>
+            </div>
+
+            {/* Copy & Print Report Actions */}
+            <div className="flex-shrink-0 flex items-center gap-2">
+               <button
+                  onClick={handleCopyReport}
+                  title="Copy the report as plain-text to your clipboard"
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40
+                             text-white text-xs font-semibold px-4 py-2 rounded-lg 
+                             transition-all flex items-center gap-2"
+                >
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {copied 
+                      ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    }
+                  </svg>
+                  {copied ? 'Copied!' : 'Copy report'}
+                </button>
+
+                <PrintChecklist result={report} filename={report.filename} />
+            </div>
+          </div>
 
           {/* Summary pills */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 animate-slide-in">
             {allClear && (
-              <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-teal text-white">
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-teal text-white shadow-sm border border-teal-dark">
                 No objections found
               </span>
             )}
             {hasCritical && (
-              <span className="text-xs font-medium px-3 py-1.5 rounded-full"
-                style={{ background: '#a32d2d', color: '#fcebeb' }}>
-                {report.critical_count} Critical
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-[#dc2626]"
+                style={{ background: '#7f1d1d', color: '#fef2f2' }}>
+                <AnimatedCount value={report.critical_count} /> Critical
               </span>
             )}
             {hasMajor && (
-              <span className="text-xs font-medium px-3 py-1.5 rounded-full"
-                style={{ background: '#854f0b', color: '#faeeda' }}>
-                {report.major_count} Major
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-[#d97706]"
+                style={{ background: '#78350f', color: '#fffbeb' }}>
+                <AnimatedCount value={report.major_count} /> Major
               </span>
             )}
             {hasMinor && (
-              <span className="text-xs font-medium px-3 py-1.5 rounded-full"
-                style={{ background: '#3f3f46', color: '#e4e4e7' }}>
-                {report.minor_count} Minor
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-[#52525b]"
+                style={{ background: '#27272a', color: '#f4f4f5' }}>
+                <AnimatedCount value={report.minor_count} /> Minor
               </span>
             )}
           </div>

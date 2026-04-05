@@ -14,19 +14,19 @@ type Severity = 'CRITICAL' | 'MAJOR' | 'MINOR'
 const SECTION_CONFIG: Record<Severity, { label: string; headerBg: string; textColor: string; countBg: string }> = {
   CRITICAL: {
     label: 'Critical Objections',
-    headerBg: 'bg-red-custom/5 border-red-custom/20',
+    headerBg: 'bg-red-custom/5 border-red-custom/20 border-l-[3px] border-l-red-custom',
     textColor: 'text-red-custom',
     countBg: 'bg-red-custom text-white',
   },
   MAJOR: {
     label: 'Major Objections',
-    headerBg: 'bg-amber-custom/5 border-amber-custom/20',
+    headerBg: 'bg-amber-custom/5 border-amber-custom/20 border-l-[3px] border-l-amber-custom',
     textColor: 'text-amber-custom',
     countBg: 'bg-amber-custom text-white',
   },
   MINOR: {
     label: 'Minor Objections',
-    headerBg: 'bg-gray-50 border-gray-200',
+    headerBg: 'bg-gray-50 border-gray-200 border-l-[3px] border-l-gray-400',
     textColor: 'text-gray-600',
     countBg: 'bg-gray-400 text-white',
   },
@@ -44,9 +44,9 @@ export default function ReportViewer({ objections, jobId }: ReportViewerProps) {
 
   if (!hasSections) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+      <div className="max-w-3xl mx-auto px-4 py-12 text-center animate-slide-up">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full
-                        bg-teal-light mb-4">
+                        bg-teal-light mb-4 ring-4 ring-teal/5">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path
               d="M5 13l4 4L19 7"
@@ -67,6 +67,8 @@ export default function ReportViewer({ objections, jobId }: ReportViewerProps) {
     )
   }
 
+  let globalCardIndex = 0;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       {severities.map((severity) => {
@@ -79,27 +81,38 @@ export default function ReportViewer({ objections, jobId }: ReportViewerProps) {
             {/* Section header */}
             <div
               className={`flex items-center justify-between px-4 py-2.5 rounded-lg
-                          border mb-3 ${cfg.headerBg}`}
+                          border mb-4 shadow-sm animate-pop-in ${cfg.headerBg}`}
             >
-              <span className={`text-sm font-medium ${cfg.textColor}`}>
+              <span className={`text-sm font-semibold ${cfg.textColor}`}>
                 {cfg.label}
               </span>
               <span
-                className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.countBg}`}
+                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${cfg.countBg}`}
               >
                 {items.length}
               </span>
             </div>
 
-            {/* Objection cards */}
-            <div>
-              {items.map((objection) => (
-                <ObjectionCard
-                  key={objection.id}
-                  objection={objection}
-                  jobId={jobId}
-                />
-              ))}
+            {/* Objection cards with staggered entrance animation */}
+            <div className="space-y-4">
+              {items.map((objection) => {
+                const currentIndex = globalCardIndex++;
+                return (
+                  <div 
+                    key={objection.id}
+                    className="animate-slide-up"
+                    style={{ 
+                      animationDelay: `${currentIndex * 60}ms`, 
+                      animationFillMode: 'both' 
+                    }}
+                  >
+                    <ObjectionCard
+                      objection={objection}
+                      jobId={jobId}
+                    />
+                  </div>
+                )
+              })}
             </div>
           </section>
         )

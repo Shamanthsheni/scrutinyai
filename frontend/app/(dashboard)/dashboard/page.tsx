@@ -146,32 +146,49 @@ export default function DashboardPage() {
       <NavBar />
 
       {/* Navy hero */}
-      <div className="bg-navy px-6 py-10">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-slate text-xs font-medium tracking-widest uppercase mb-2">
-            Karnataka High Court
-          </p>
-          <h1 className="text-white text-2xl font-medium mb-2">
-            Pre-filing scrutiny checker
-          </h1>
-          <p className="text-slate text-sm mb-6 max-w-md leading-relaxed">
-            Upload your civil draft and receive a ranked objection report before you file.
-          </p>
-          {/* Stat pills */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              '31 checklist points',
-              'Results in 2–5 minutes',
-              'Rs. 2–4 AI cost per check',
-            ].map((stat) => (
-              <span
-                key={stat}
-                className="text-xs text-white px-3 py-1.5 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.10)' }}
-              >
-                {stat}
-              </span>
-            ))}
+      <div className="bg-[#0b172a] relative overflow-hidden px-6 py-12 md:py-16">
+        <div className="absolute inset-0 grid-pattern-overlay opacity-30 pointer-events-none" />
+        <div className="max-w-3xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div className="flex-1">
+            <p className="text-teal-light text-xs font-bold tracking-[0.15em] uppercase mb-2.5">
+              Karnataka High Court
+            </p>
+            <h1 className="text-white text-3xl sm:text-4xl font-semibold mb-3 tracking-tight">
+              Pre-filing Scrutiny Checker
+            </h1>
+            <p className="text-slate text-sm sm:text-base mb-8 max-w-lg leading-relaxed opacity-90">
+              Upload your civil draft and receive a ranked objection report instantly. Eliminate manual oversight and file with confidence.
+            </p>
+            
+            {/* Stat pills */}
+            <div className="flex flex-wrap gap-2.5">
+              {[
+                { label: '21 checklist points', icon: 'M5 13l4 4L19 7' },
+                { label: 'Results in 1–2 minutes', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { label: 'Secured', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+              ].map((stat) => (
+                <span
+                  key={stat.label}
+                  className="inline-flex items-center gap-1.5 text-xs text-white font-medium px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white/40 hover:bg-white/10 transition-colors shadow-sm"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                >
+                  <svg className="w-3.5 h-3.5 text-teal-light" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={stat.icon} />
+                  </svg>
+                  {stat.label}
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          {/* Live counter */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center min-w-[140px] shadow-sm backdrop-blur-sm">
+            <div className="text-3xl font-bold text-white mb-1 tracking-tight">
+              {checks.length.toLocaleString()}
+            </div>
+            <div className="text-xs font-semibold text-slate uppercase tracking-wider">
+              Checks Processed
+            </div>
           </div>
         </div>
       </div>

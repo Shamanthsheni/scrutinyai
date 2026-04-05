@@ -102,7 +102,7 @@ async def process_document(file_id: str) -> None:
     tmp_path = tmp_pdf_path(file_id)
     storage_key = storage_filename(file_id)
 
-    logger.info("process_document START file_id=%s", file_id)
+    logger.info(f"[WORKER] process_document started for file_id={file_id}")
 
     # ── Step 1: Mark processing ────────────────────────────────
     _update_job(file_id, status=JobStatus.PROCESSING, progress_percent=10)
@@ -136,12 +136,31 @@ async def process_document(file_id: str) -> None:
             document.ocr_path_used,
             document.overall_ocr_confidence,
         )
+        # ── DEBUG: OCR details ─────────────────────────────────
+        logger.debug("[DEBUG] OCR path used       : %s", document.ocr_path_used)
+        logger.debug("[DEBUG] Overall OCR confidence: %.4f", document.overall_ocr_confidence)
+        logger.debug("[DEBUG] Total pages          : %d", document.total_pages)
+        total_chars = sum(len(t) for t in document.raw_text_by_page.values())
+        logger.debug("[DEBUG] Total chars extracted: %d", total_chars)
+        for pg, text in sorted(document.raw_text_by_page.items()):
+            logger.debug("[DEBUG]   Page %d: %d chars | preview: %.80s",
+                         pg, len(text), text.replace("\n", " "))
 
         # ── Step 4: Section detection ──────────────────────────
         logger.info("Running SectionDetector for file_id=%s …", file_id)
         detector = SectionDetector()
         detector.detect(document)
         _update_job(file_id, progress_percent=50)
+        # ── DEBUG: Section details ─────────────────────────────
+        logger.debug("[DEBUG] Sections detected    : %s", list(document.sections.keys()))
+        for sec_name, (start, end) in document.sections.items():
+            sec_text = document.raw_text_by_section.get(sec_name, "")
+            logger.debug(
+                "[DEBUG]   Section %-25s pages %d-%d | %d chars | preview: %.60s",
+                sec_name, start, end, len(sec_text), sec_text.replace("\n", " "),
+            )
+        if not document.sections:
+            logger.warning("[DEBUG] ⚠ NO SECTIONS DETECTED — checklist checks will use full-doc text")
         logger.info(
             "SectionDetector done: sections=%s",
             list(document.sections.keys()),
@@ -150,6 +169,17 @@ async def process_document(file_id: str) -> None:
         # ── Step 5: Rule engine ────────────────────────────────
         logger.info("Running RuleEngine for file_id=%s …", file_id)
         engine = _get_rule_engine()
+        # ── DEBUG: checklist point counts per checker ──────────
+        logger.debug(
+            "[DEBUG] RuleEngine checklist: FORMAT=%d STRUCTURE=%d FISCAL=%d points",
+            len(engine._format_points),
+            len(engine._structure_points),
+            len(engine._fiscal_points),
+        )
+        logger.debug("[DEBUG] FORMAT  IDs: %s", [p["id"] for p in engine._format_points])
+        logger.debug("[DEBUG] STRUCTURE IDs: %s", [p["id"] for p in engine._structure_points])
+        logger.debug("[DEBUG] FISCAL  IDs: %s", [p["id"] for p in engine._fiscal_points])
+
         result = await engine.run(document)
         _update_job(file_id, progress_percent=80)
         logger.info(
@@ -159,6 +189,18 @@ async def process_document(file_id: str) -> None:
             result.minor_count,
             result.total_ai_tokens_used,
         )
+        logger.debug("[DEBUG] Final objections:")
+        for obj in result.objections:
+            logger.debug(
+                "[DEBUG]   %s | %-10s | %-8s | conf=%.2f | manual=%s | %s",
+                obj.checklist_point_id,
+                obj.category,
+                obj.severity,
+                obj.confidence_score,
+                obj.requires_manual_verification,
+                obj.description[:80],
+            )
+
 
         # ── Step 6: Persist result ─────────────────────────────
         result_dict = result.to_dict()

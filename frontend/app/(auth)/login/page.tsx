@@ -51,9 +51,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <ul className="space-y-4">
+          <ul className="space-y-4 pt-10">
             {[
-              '31-point Karnataka HC checklist',
+              '21-point Karnataka HC checklist',
               'Results in under 5 minutes',
               'Documents never leave India',
             ].map((point) => (
@@ -176,20 +176,15 @@ export default function LoginPage() {
             </form>
 
             {/* Divider */}
-            <div className="border-t border-gray-100" />
-
             {/* Footer note */}
             <p className="text-center text-gray-text text-xs leading-relaxed">
-              Access by invitation only during beta.
-              <br />
-              Contact{' '}
-              <a
-                href="mailto:scrutinyai@proton.me"
-                className="text-teal hover:underline"
+              Don't have an account?{' '}
+              <button
+                onClick={(e) => { e.preventDefault(); router.push('/register') }}
+                className="text-teal hover:underline font-medium cursor-pointer"
               >
-                scrutinyai@proton.me
-              </a>{' '}
-              for access.
+                Register now
+              </button>
             </p>
           </div>
         </div>

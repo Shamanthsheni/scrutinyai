@@ -14,6 +14,7 @@ Checks implemented:
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -21,6 +22,8 @@ import fitz  # PyMuPDF
 
 from backend.rule_engine.checkers.base_checker import BaseChecker
 from backend.rule_engine.models import Objection, ParsedDocument
+
+logger = logging.getLogger(__name__)
 
 
 class FormatChecker(BaseChecker):
@@ -32,22 +35,24 @@ class FormatChecker(BaseChecker):
     async def check(self, document: ParsedDocument) -> list[Objection]:
         """
         Open the PDF with fitz and run each FORMAT checklist point in turn.
-
-        Args:
-            document: Must have pdf_file_path set.
-
-        Returns:
-            List of Objection objects for every FORMAT violation found.
         """
         objections: list[Objection] = []
 
+        logger.debug(
+            "[FormatChecker] Starting — %d points to check: %s",
+            len(self._points),
+            [p['id'] for p in self._points],
+        )
+
         if not document.pdf_file_path:
+            logger.debug("[FormatChecker] No pdf_file_path on document — skipping all checks")
             return objections
 
         try:
             pdf = fitz.open(document.pdf_file_path)
         except Exception as exc:
-            return objections  # cannot open — OCR pipeline would have caught real errors
+            logger.warning("[FormatChecker] Could not open PDF with fitz: %s", exc)
+            return objections
 
         try:
             for point in self._points:
@@ -57,35 +62,89 @@ class FormatChecker(BaseChecker):
                 point_id = point["id"]
                 params: dict[str, Any] = point.get("parameters", {})
 
+                logger.debug("[FormatChecker] Running point %s", point_id)
+
                 if point_id == "FMT-001":
-                    objections.extend(
-                        self._check_left_margin(pdf, document, point, params)
-                    )
+                    result = self._check_left_margin(pdf, document, point, params)
+                    logger.debug("[FormatChecker] FMT-001 → %d objection(s)", len(result))
+                    objections.extend(result)
                 elif point_id == "FMT-002":
-                    objections.extend(
-                        self._check_font_size(pdf, document, point, params)
-                    )
+                    result = self._check_font_size(pdf, document, point, params)
+                    logger.debug("[FormatChecker] FMT-002 → %d objection(s)", len(result))
+                    objections.extend(result)
                 elif point_id == "FMT-003":
-                    objections.extend(
-                        self._check_page_size(pdf, document, point, params)
-                    )
+                    result = self._check_page_size(pdf, document, point, params)
+                    logger.debug("[FormatChecker] FMT-003 → %d objection(s)", len(result))
+                    objections.extend(result)
                 elif point_id == "FMT-004":
-                    objections.extend(
-                        self._check_page_numbering(pdf, document, point, params)
-                    )
+                    result = self._check_page_numbering(pdf, document, point, params)
+                    logger.debug("[FormatChecker] FMT-004 → %d objection(s)", len(result))
+                    objections.extend(result)
                 elif point_id == "FMT-005":
-                    objections.extend(
-                        self._check_other_margins(pdf, document, point, params)
-                    )
+                    result = self._check_other_margins(pdf, document, point, params)
+                    logger.debug("[FormatChecker] FMT-005 → %d objection(s)", len(result))
+                    objections.extend(result)
+                elif point.get("check_type") in ("presence", "format"):
+                    # New-schema FORMAT point (e.g. I-c, IX-g) — run keyword check
+                    result = self._check_format_keyword(document, point)
+                    logger.debug("[FormatChecker] Point %s (keyword) → %s", point_id, 'OBJECTION' if result else 'PASS')
+                    if result:
+                        objections.append(result)
+                else:
+                    logger.debug("[FormatChecker] Point %s — no handler, skipping", point_id)
 
         finally:
             pdf.close()
 
+        logger.debug(
+            "[FormatChecker] Done — %d total objection(s)", len(objections)
+        )
         return objections
+
+    # ──────────────────────────────────────────────────────────
+    # New-schema: generic keyword-presence FORMAT check
+    # ──────────────────────────────────────────────────────────
+
+    _FORMAT_KEYWORDS: dict[str, list[str]] = {
+        "I-c":  ["index", "sl.no", "s.no", "page no", "stitched", "paginated"],
+        "IX-g": ["stitched separately", "ia separately", "separately stitched"],
+    }
+
+    def _check_format_keyword(
+        self, document: ParsedDocument, point: dict
+    ) -> "Objection | None":
+        """
+        Keyword search for new-schema FORMAT points that are not geometry checks.
+        """
+        from backend.rule_engine.models import Objection  # avoid circular at top-level
+        point_id = point["id"]
+        keywords = self._FORMAT_KEYWORDS.get(point_id, [])
+        if not keywords:
+            return None
+        full_text = self._get_section_text(document, "*").lower()
+        for kw in keywords:
+            if kw.lower() in full_text:
+                return None
+        return Objection(
+            category="FORMAT",
+            severity=point["severity"],
+            checklist_point_id=point_id,
+            page_references=[],
+            rule_citation=point.get("rule_source", ""),
+            description=(
+                f"{point.get('description', 'Required formatting element missing.')} "
+                "This formatting requirement could not be verified in the document."
+            ),
+            suggested_fix=(
+                f"See: {point.get('rule_source', 'Karnataka HC Rules')} for formatting requirements."
+            ),
+            confidence_score=0.80,
+        )
 
     # ──────────────────────────────────────────────────────────
     # FMT-001: Left margin
     # ──────────────────────────────────────────────────────────
+
 
     def _check_left_margin(
         self,
